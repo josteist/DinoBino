@@ -1,5 +1,7 @@
 ## loading palobiodb
 rm(list=ls())
+# Not sure how to get the git to send from my comp to the server, isn't the sshs working?
+
 
 library(paleobioDB)
 library(stats4)
