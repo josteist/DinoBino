@@ -16,7 +16,7 @@ source("functions_DinoBino.R")
 ## loading occurrences of theropods
 ## We also want to have early_int_no and late_int_no [ein and lin] to place occs inside intervals
 ## achieved by adding "time" to the show entry.
-dinos <- pbdb_occurrences(limit="all", base_name="Sauropodomorpha", show=c("phylo", "ident", "time"))
+dinos <- pbdb_occurrences(limit="all", base_name="Dinosauria", show=c("phylo", "ident", "time"))
 stegos <- pbdb_occurrences(limit="all", base_name="Stegosauria", show=c("phylo", "ident", "time"))
 # dinos <- pbdb_occurrences(limit="all", base_name="Ornithischia", show=c("phylo", "ident", "time"))
 
@@ -40,7 +40,7 @@ stegos <- pbdb_occurrences(limit="all", base_name="Stegosauria", show=c("phylo",
 
 ## There is a lot of noise and some typos in the age limits in the data from PBDB. Inputting the
 ## consensus numbers from my own xlsheet
-Bins = matrix(data=NA,nrow=27,ncol=5)
+Bins = matrix(data=NA,nrow=27,ncol=6)
 
 Bins[,1] = c(72.1 , 83.6, 86.3, 89.8, 93.9,
              100.5, 113, 125, 129.4, 132.9, 139.8, 145, 
@@ -55,7 +55,10 @@ Bins[,4] = seq(112,138)
 ## Names for dinosaur bins. PBDB intervals 112:138
 interval.names =c("Maastrichtian","Campanian","Santonian","Coniacian","Turonian","Cenomanian","Albian","Aptian","Barremian","Hauterivian","Valanginian","Berriasian","Tithonian","Kimmeridgian","Oxfordian","Callovian","Bathonian","Bajacian","Aalenian","Toarcian","Pliensbachian","Sinemurian","Hettangian","Rhaetian","Norian","Carnian","Ladinian")
 interval2.names = c("Triassic","Jurassic","Cretaceaous")
+# Periods Triassic, Jurassic, Cretaceous
 Bins[,5] = c(3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1)
+# Epoch, Triassic, Early Jurassic, Mid Jurassic, Late Jurassic, Early Cretaceaous, Late Cretaceous
+Bins[,6] = c(6,6,6,6,6,6,5,5,5,5,5,5,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1)
 midpoints=(Bins[,1]+Bins[,2])/2
 
 J = createDataArrs(dinos)
@@ -95,6 +98,16 @@ for (ii in 1:3){
   poisrates_period[ii,] <- estimatePoiss(dTs,Occs)
 }
 
+## Estimating epoch specific sampling rates.
+poisrates_epoch = matrix(NA,6,3)
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_epoch[ii,] <- estimatePoiss(dTs,Occs)
+}
+
 ## Estimating interval specific sampling rates
 poisrates_interval = matrix(NA,27,3)
 for (ii in 1:27) {
@@ -110,7 +123,7 @@ for (ii in 1:27) {
 
 
 ## Converting the Poisson rates to binomial probabilities. 
-p_binomial_all = array(NA,c(27,3,3))
+p_binomial_all = array(NA,c(27,4,3))
 # Interval by sampling period estimation by [mle, lower ci, upper ci]
 # Global, Period, Interval
 for (ii in 1:27){
@@ -119,24 +132,102 @@ for (ii in 1:27){
   for (jj in 1:3){ # for mle, ci1, ci2
   p_binomial_all[ii,1,jj] <- 1-exp(-dt*poisrates[jj])
   p_binomial_all[ii,2,jj] <- 1-exp(-dt*poisrates_period[Bins[ii,5],jj])
-  p_binomial_all[ii,3,jj] <- 1-exp(-dt*poisrates_interval[ii,jj])
+  p_binomial_all[ii,3,jj] <- 1- exp(-dt*poisrates_epoch[Bins[ii,6],jj])
+  p_binomial_all[ii,4,jj] <- 1-exp(-dt*poisrates_interval[ii,jj])
   }
   
   
 }
 
-
-plot(midpoints,p_binomial_all[,1,1],type="o")
+## Plotting the binomial sampling rates over time for different lumped data.
+ymin = 0
+ytx  = ymin - 0.125*(ymax-ymin)
+plot(midpoints,p_binomial_all[,1,1],type="o",xlab="M",ylab="Binomial sampling probability",xlim=rev(range(midpoints)),ylim=c(0,1))
 lines(midpoints,p_binomial_all[,2,1],type="o",col = 2)
 lines(midpoints,p_binomial_all[,3,1],type="o",col = 3)
-
+lines(midpoints,p_binomial_all[,4,1],type="o",col = 4)
+legend("bottomright",c("Global sampling rate","Period sampling rate","Epoch sampling rate","Interval sampling rate"),col=c(1:4),pch=c(1,1,1))
+# abline(h=0)
+# text(midpoints,ytx,interval.names,srt=90)
+for (ii in 1:27){
+  abline(v=Bins[ii,1],col="lightgray")
+  #ep(Bins[ii,1],2),c(yplmin,0))
+}
+abline(v=Bins[1,2],col="lightgray")
 
 
 N_true = matrix(NA,27,3)
-for (ii in 1:27){
-N_true[ii,] <- estimatetrue(Nospec[ii],p_glob[ii])
+N_true_all = array(NA,c(27,3,5))
+# As sampling probs; interval by sampling method by [mle, ci1,ci2, ci3 ,ci4]
+# Where ci1,ci2 uses the CIS from the binomial distribution using the MLE p_binom
+# and ci3,ci4 is the ci's using the min and max sampling prob from the ci's of the binomial probability.
+
+for (ii in 1:27){ #for each interval
+  for (jj in 1:3){ # for each sampling rate - type [global, period, interval]
+    # N_true[ii,] <- estimatetrue(Nospec[ii],p_glob[ii])
+    for (oo in 1:3){ # for each estimate [MLE, p-binoci1 p-binoci2]
+      # But for each sampling rate we have N[mle], N[lowci],N[highci] from the binomial
+      # for ii==1 we store all of these, since we want these ci's.
+      # for ii=2,3 we take the
+      if (is.na(p_binomial_all[ii,jj,oo])){
+        # don't compute since rate is not defined
+      } else {
+        n_tmp <- estimatetrue(Nospec[ii],p_binomial_all[ii,jj,oo])
+        
+        if (oo==1){
+          N_true_all[ii,jj,1:3]<-n_tmp
+        }
+        else if (oo==2){
+          N_true_all[ii,jj,5] <- max(n_tmp)
+        }
+        else if (oo==3){
+          N_true_all[ii,jj,4] <- min(n_tmp)
+        }
+        
+        
+      }
+    }
+  }
 }
 # par(mfrow=c(2,2))
+
+
+
+##
+# THinking about what to plot;
+N_true_all[1,,]
+# SO for any interval we have 15 richnesses estimated;
+# 3 by 5
+# Method [global, period, interval]
+# Estimate [N_MLE & P_MLE, N_ci1 & P_mle, N_ci2 & P_mle, N_ci3 & max(P_ci], N_ci & min(P_ci))]
+
+# We want to compare MLE's
+plot(midpoints,N_true_all[,1,1],type="o",lty=2,col=2,xlim = rev(range(midpoints)))
+lines(midpoints,N_true_all[,2,1],type="o",lty=3,col=3)
+lines(midpoints,N_true_all[,3,1],type="o",lty=4,col=4)
+lines(midpoints,Nospec,type="o",lty=4,col=1)
+legend("topleft",c("Observed richness","Global sampling rate","Period sampling rate","Interval sampling rate"),col=c(1:4),pch=c(1,1,1,1))
+
+# Observed richness for sure
+# MLE richness N_true_all[,1,1] - global sampling rate
+# MLE richness N_true_all[,
+# plot(midpoints,N_true_all[,1,1],type="o",xlim= rev(range(midpoints)),ylab='Sauropodomorphs richness',xlab="Myr")
+#   lines(midpoints,Nospec)
+
+# Global sampling with max/min (i.e. ci's using min/max Prob)
+par(mfrow=c(2,2))
+plot(midpoints,N_true_all[,1,1],type="o",xlim=rev(range(midpoints)))
+lines(midpoints,N_true_all[,1,4])
+lines(midpoints,N_true_all[,1,5])
+title('Global sampling rate')
+plot(midpoints,N_true_all[,2,1],type="o",xlim=rev(range(midpoints)))
+lines(midpoints,N_true_all[,2,4])
+lines(midpoints,N_true_all[,2,5])
+title('Period sampling rate')
+plot(midpoints,N_true_all[,3,1],type="o",xlim=rev(range(midpoints)),ylim=c(0,2500))
+lines(midpoints,N_true_all[,3,4])
+lines(midpoints,N_true_all[,3,5])
+title('Interval sampling rate')
 
 
 

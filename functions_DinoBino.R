@@ -74,7 +74,7 @@ createDataArrs <- function(dinos){
     j1<- dinos$ein[dinos$mid==ii]
     j2<- dinos$lin[dinos$mid==ii]
     for (jj in (1:length(j1))) {
-      if (j2[jj]>(Bins[1,4]-1)){
+      if (j2[jj]>(Bins[1,4]-1)&j2[jj]<Bins[27,4]){
         if (j1[jj]>j2[jj]) {
           countdoubles=countdoubles+1
           bix = seq(j1[jj],j2[jj])
