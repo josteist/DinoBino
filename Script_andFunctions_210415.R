@@ -9,7 +9,9 @@ library(stats4)
 
 # source("C:/Users/josteist/Documents/DinoBino/R_code/dinbinfun.R")
 
-source("http://www.mn.uio.no/cees/english/people/researcher-postdoc/josteist/r_code/dinbinfun.r")
+# source("http://www.mn.uio.no/cees/english/people/researcher-postdoc/josteist/r_code/dinbinfun.r")
+source("functions_DinoBino.R")
+# Hmmm, this didn't seem to load as a set of functions...
 
 ## loading occurrences of theropods
 ## We also want to have early_int_no and late_int_no [ein and lin] to place occs inside intervals
@@ -54,49 +56,15 @@ Bins[,4] = seq(112,138)
 interval.names =c("Maastrichtian","Campanian","Santonian","Coniacian","Turonian","Cenomanian","Albian","Aptian","Barremian","Hauterivian","Valanginian","Berriasian","Tithonian","Kimmeridgian","Oxfordian","Callovian","Bathonian","Bajacian","Aalenian","Toarcian","Pliensbachian","Sinemurian","Hettangian","Rhaetian","Norian","Carnian","Ladinian")
 interval2.names = c("Triassic","Jurassic","Cretaceaous")
 Bins[,5] = c(3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1)
+midpoints=(Bins[,1]+Bins[,2])/2
 
-## Counting occurrences inside each bin for each uniqe species
-# A uniqe indexlist of occurrences matched to species rank.
-uniqspec <- unique(dinos$mid[dinos$mra==3])
-# Data has [species by interval] with number of occurrences per species in each interval.
-Data = matrix(data=0,nrow=length(uniqspec),ncol=27)
-# Times are the durations in a matrix of same size for ease of computation.
-Times = matrix(data=0,nrow=length(uniqspec),ncol=27)
-# Inputting the durations in the Times matrix
-for (ii in 1:27){
-  Times[,ii] <- Bins[ii,3]
-  
-}
-## species by interval matrix
-tix = 1 # loop counter
-countdoubles = 0; # counting how many occurrences span more than 1 bin
-for (ii in uniqspec) {
-  ##	dinos$ein[dinos$mid==ii]-dinos$lin[dinos$mid==ii]
-  j1<- dinos$ein[dinos$mid==ii]
-  j2<- dinos$lin[dinos$mid==ii]
-  for (jj in (1:length(j1))) {
-    if (j2[jj]>111){
-      if (j1[jj]>j2[jj]) {
-        countdoubles=countdoubles+1
-        bix = seq(j1[jj],j2[jj])
-        x = Bins[bix-111,3]			
-        binow <- bix[Emprand(x)]
-      } else {
-        binow <- j1[jj]
-      }
-      if (binow<Bins[1,4] | binow>Bins[nrow(Bins),4]){
-        ignor<- 1
-      } else {
-        Data[tix,binow-(Bins[1,4]-1)] <- Data[tix,binow-(Bins[1,4]-1)]+1
-      }
-    }
-  }
-  tix <-tix+1
-}
+J = createDataArrs(dinos)
+# Now Data and Times are made with the function above.
+
 # Number of species per interval
 Nospec <- matrix(0,27,1)
 for (ii in 1:27){
-  Nospec[ii]<-sum(Data[,ii]>0)
+  Nospec[ii]<-sum(J$Data[,ii]>0)
   
 }
 ## Testing, estimating the sampling probability using the functions defined below for each 
@@ -104,8 +72,8 @@ for (ii in 1:27){
 
 # Estimating global sampling rate, i.e. assuming a fixed fossil/sampling intensity for the 
 # entire span of time.
-Occs <- Data[Data>0] # Occurrences 
-dTs  <- Times[Data>0] # List of durations for each of these occurrences
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
 poisrates <- estimatePoiss(dTs,Occs)
 
 p_glob = matrix(NA,27,3)
@@ -117,6 +85,51 @@ for (ii in 1:27){
   
 }
 
+## Estimating period specific sampling rates.
+poisrates_period = matrix(NA,3,3)
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_period[ii,] <- estimatePoiss(dTs,Occs)
+}
+
+## Estimating interval specific sampling rates
+poisrates_interval = matrix(NA,27,3)
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+  poisrates_interval[ii,] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+
+
+## Converting the Poisson rates to binomial probabilities. 
+p_binomial_all = array(NA,c(27,3,3))
+# Interval by sampling period estimation by [mle, lower ci, upper ci]
+# Global, Period, Interval
+for (ii in 1:27){
+  # Global rates
+  dt = Bins[ii,3] # Duration of this bin
+  for (jj in 1:3){ # for mle, ci1, ci2
+  p_binomial_all[ii,1,jj] <- 1-exp(-dt*poisrates[jj])
+  p_binomial_all[ii,2,jj] <- 1-exp(-dt*poisrates_period[Bins[ii,5],jj])
+  p_binomial_all[ii,3,jj] <- 1-exp(-dt*poisrates_interval[ii,jj])
+  }
+  
+  
+}
+
+
+plot(midpoints,p_binomial_all[,1,1],type="o")
+lines(midpoints,p_binomial_all[,2,1],type="o",col = 2)
+lines(midpoints,p_binomial_all[,3,1],type="o",col = 3)
+
 
 
 N_true = matrix(NA,27,3)
@@ -124,7 +137,7 @@ for (ii in 1:27){
 N_true[ii,] <- estimatetrue(Nospec[ii],p_glob[ii])
 }
 # par(mfrow=c(2,2))
-midpoints=(Bins[,1]+Bins[,2])/2
+
 
 
 ymax = max(N_true[,1])

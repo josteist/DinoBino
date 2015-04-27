@@ -4,7 +4,7 @@ Mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
-x|
+
 # Drawing a number/index from an empirical probability distribution.
 Emprand <- function(x) {
   j <- runif(1) ## drawing random uniform number
@@ -58,11 +58,11 @@ createDataArrs <- function(dinos){
   # A uniqe indexlist of occurrences matched to species rank.
   uniqspec <- unique(dinos$mid[dinos$mra==3])
   # Data has [species by interval] with number of occurrences per species in each interval.
-  Data = matrix(data=0,nrow=length(uniqspec),ncol=27)
+  Data = matrix(data=0,nrow=length(uniqspec),ncol=nrow(Bins))
   # Times are the durations in a matrix of same size for ease of computation.
-  Times = matrix(data=0,nrow=length(uniqspec),ncol=27)
+  Times = matrix(data=0,nrow=length(uniqspec),ncol=nrow(Bins))
   # Inputting the durations in the Times matrix
-  for (ii in 1:27){
+  for (ii in 1:nrow(Bins)){
     Times[,ii] <- Bins[ii,3]
     
   }
@@ -74,11 +74,11 @@ createDataArrs <- function(dinos){
     j1<- dinos$ein[dinos$mid==ii]
     j2<- dinos$lin[dinos$mid==ii]
     for (jj in (1:length(j1))) {
-      if (j2[jj]>111){
+      if (j2[jj]>(Bins[1,4]-1)){
         if (j1[jj]>j2[jj]) {
           countdoubles=countdoubles+1
           bix = seq(j1[jj],j2[jj])
-          x = Bins[bix-111,3]			
+          x = Bins[bix-(Bins[1,4]-1),3]			
           binow <- bix[Emprand(x)]
         } else {
           binow <- j1[jj]
