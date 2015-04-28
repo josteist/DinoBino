@@ -415,11 +415,35 @@ for (ii in 1:27) {
 }
 
 
+# Converting the interval specific rates to binomial probabilities.
+
+p_interval = array(NA,c(27,3,6)); #interval by [mle,ci1,ci2] by group
+for (jj in 1:6){
+  for (ii in 1:27){
+    p_interval[ii,1,jj] <- 1-exp(-poisrates_interval[ii,1,jj]*Bins[ii,3])
+    p_interval[ii,2,jj] <- 1-exp(-poisrates_interval[ii,2,jj]*Bins[ii,3])
+    p_interval[ii,3,jj] <- 1-exp(-poisrates_interval[ii,3,jj]*Bins[ii,3])
+    #     1-exp(-coef(fit1)*Bins[ii,3])
+    
+  }
+}
 
 
 
+# Temp code to export the numbers
+# Number of species in the different groups
+writeClipboard(as.character(Nospecies))
+# Sampling probabilities as binomials. MLEs
+writeClipboard(as.character(p_glob[,1,]))
+writeClipboard(as.character(p_period[,1,]))
+writeClipboard(as.character(p_epoch[,1,]))
+writeClipboard(as.character(p_interval[,1,]))
 
-## Converting the Poisson rates to binomial probabilities. 
+# Late Cretaceous with cis
+writeClipboard(as.character(p_interval[1:6,1,]))
+writeClipboard(as.character(p_interval[1:6,2,]))
+writeClipboard(as.character(p_interval[1:6,3,]))
+               ## Converting the Poisson rates to binomial probabilities. 
 p_binomial_all = array(NA,c(27,4,3))
 # Interval by sampling period estimation by [mle, lower ci, upper ci]
 # Global, Period, Interval
