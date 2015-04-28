@@ -108,6 +108,16 @@ estimatetrue <- function(nobs,binomprob) {
   return(c(n[which.max(liks)],min(tmp),max(tmp)))
 }
   
-  
-  
+
+
+# Number of species per interval
+getNospec <- function(Data){
+  Nospec <- matrix(0,27,1)
+  for (ii in 1:27){
+    Nospec[ii]<-sum(Data[,ii]>0)
+    
+  }
+  return(Nospec)
+}
+
   

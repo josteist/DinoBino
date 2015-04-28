@@ -16,8 +16,20 @@ source("functions_DinoBino.R")
 ## loading occurrences of theropods
 ## We also want to have early_int_no and late_int_no [ein and lin] to place occs inside intervals
 ## achieved by adding "time" to the show entry.
-dinos <- pbdb_occurrences(limit="all", base_name="Dinosauria", show=c("phylo", "ident", "time"))
-stegos <- pbdb_occurrences(limit="all", base_name="Stegosauria", show=c("phylo", "ident", "time"))
+
+
+dinos  <- pbdb_occurrences(limit="all", base_name="Dinosauria", show=c("phylo", "ident", "time"))
+ornits <- pbdb_occurrences(limit="all", base_name="Ornithischia", show=c("phylo", "ident", "time"))
+sauros <- pbdb_occurrences(limit="all", base_name="Sauropoda", show=c("phylo", "ident", "time"))
+theros <- pbdb_occurrences(limit="all", base_name="Theropoda", show=c("phylo", "ident", "time"))
+theroswobird <- pbdb_occurrences(limit="all", base_name="Theropoda",exclude_id=36616, show=c("phylo", "ident", "time"))
+dinoswobird  <- pbdb_occurrences(limit="all", base_name="Dinosauria",exclude_id=36616, show=c("phylo", "ident", "time"))
+
+# We could group them nestedly, as they are in a phylogeny;
+
+# Dinosauria [All]
+# Split into Ornithischia vs Sauropodomorpha&Theropoda
+# Split into Ornithischia vs Sauropodomorpha vs Theropoda
 # dinos <- pbdb_occurrences(limit="all", base_name="Ornithischia", show=c("phylo", "ident", "time"))
 
 # NOTE: Should use the confidence intervals from the estimated sampling rate to estimate
@@ -61,64 +73,349 @@ Bins[,5] = c(3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1)
 Bins[,6] = c(6,6,6,6,6,6,5,5,5,5,5,5,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1)
 midpoints=(Bins[,1]+Bins[,2])/2
 
-J = createDataArrs(dinos)
+
+J1 = createDataArrs(dinos)
+J2 = createDataArrs(dinoswobird)
+J3 = createDataArrs(ornits)
+J4 = createDataArrs(sauros)
+J5 = createDataArrs(theros)
+J6 = createDataArrs(theroswobird)
 # Now Data and Times are made with the function above.
 
-# Number of species per interval
-Nospec <- matrix(0,27,1)
-for (ii in 1:27){
-  Nospec[ii]<-sum(J$Data[,ii]>0)
-  
-}
+# Extracting number of species.
+Nospecies = array(NA,c(27,6)); #interval by dinosaurgroup
+J = J1;
+jj =  1
+Nospecies[,jj] <- getNospec(J$Data)
+
+J = J2;
+jj =  2
+Nospecies[,jj] <- getNospec(J$Data)
+
+J = J3;
+jj =  3
+Nospecies[,jj] <- getNospec(J$Data)
+
+J = J4;
+jj =  4
+Nospecies[,jj] <- getNospec(J$Data)
+
+J = J5;
+jj =  5
+Nospecies[,jj] <- getNospec(J$Data)
+
+J = J6;
+jj =  6
+Nospecies[,jj] <- getNospec(J$Data)
+
 ## Testing, estimating the sampling probability using the functions defined below for each 
 ## interval
 
 # Estimating global sampling rate, i.e. assuming a fixed fossil/sampling intensity for the 
 # entire span of time.
+# Comparing the different groups. THe are numbered as the arrays defined in lines 77-82
+
+poisrates = matrix(NA,6,3)
+# All Dinos
+J = J1;
 Occs <- J$Data[J$Data>0] # Occurrences 
 dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
-poisrates <- estimatePoiss(dTs,Occs)
+poisrates[1,] <- estimatePoiss(dTs,Occs)
 
-p_glob = matrix(NA,27,3)
+# Dinos wo birds
+J = J2;
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
+poisrates[2,] <- estimatePoiss(dTs,Occs)
+
+# Ornits
+J = J3;
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
+poisrates[3,] <- estimatePoiss(dTs,Occs)
+
+#Sauropods
+J = J4;
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
+poisrates[4,] <- estimatePoiss(dTs,Occs)
+
+#Theropods
+J = J5;
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
+poisrates[5,] <- estimatePoiss(dTs,Occs)
+
+
+#Theropods wo birds
+J = J6;
+Occs <- J$Data[J$Data>0] # Occurrences 
+dTs  <- J$Times[J$Data>0] # List of durations for each of these occurrences
+poisrates[6,] <- estimatePoiss(dTs,Occs)
+
+
+# Making them be binomial probs.
+p_glob = array(NA,c(27,3,6))
+for (jj in 1:6){
 for (ii in 1:27){
-  p_glob[ii,1] <- 1-exp(-poisrates[1]*Bins[ii,3])
-  p_glob[ii,2] <- 1-exp(-poisrates[2]*Bins[ii,3])
-  p_glob[ii,3] <- 1-exp(-poisrates[3]*Bins[ii,3])
+  p_glob[ii,1,jj] <- 1-exp(-poisrates[jj,1]*Bins[ii,3])
+  p_glob[ii,2,jj] <- 1-exp(-poisrates[jj,2]*Bins[ii,3])
+  p_glob[ii,3,jj] <- 1-exp(-poisrates[jj,3]*Bins[ii,3])
 #     1-exp(-coef(fit1)*Bins[ii,3])
   
 }
+}
 
-## Estimating period specific sampling rates.
-poisrates_period = matrix(NA,3,3)
+
+plot(midpoints,p_glob[,1,1],type = "o",lty=1,xlim = rev(range(midpoints)))
+for (jj in 2:6){
+  lines(midpoints,p_glob[,1,jj],type = "o",lty=jj)
+}
+
+
+# Estimating period specific sampling rates for each of the datasets
+poisrates_period = array(NA,c(3,3,6)) # storing them here, period by [mle,ci1,ci2] by dinogroup
+J = J1; jj=1;  
 for (ii in 1:3){
   tmp = J$Data[,Bins[,5]==ii]
   tmp2 = J$Time[,Bins[,5]==ii]
   Occs = tmp[tmp>0]
   dTs = tmp2[tmp>0]
-  poisrates_period[ii,] <- estimatePoiss(dTs,Occs)
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
 }
 
+J = J2; jj=2;  
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+J = J3; jj=3;  
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  if (sum(Occs>1)>1){ # if enough data to estimate.
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+J = J4; jj=4;  
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+J = J5; jj=5;  
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+J = J6; jj=6;  
+for (ii in 1:3){
+  tmp = J$Data[,Bins[,5]==ii]
+  tmp2 = J$Time[,Bins[,5]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_period[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+# Period specific Binomial rates
+p_period = array(NA,c(27,3,6))
+# Interval by [mle,ci1,ci2] by group
+for (jj in 1:6){
+  for (ii in 1:27){
+    p_period[ii,1,jj] <- 1-exp(-poisrates_period[Bins[ii,5],1,jj]*Bins[ii,3])
+    p_period[ii,2,jj] <- 1-exp(-poisrates_period[Bins[ii,5],2,jj]*Bins[ii,3])
+    p_period[ii,3,jj] <- 1-exp(-poisrates_period[Bins[ii,5],3,jj]*Bins[ii,3])
+    #     1-exp(-coef(fit1)*Bins[ii,3])
+    
+  }
+}
+
+
+
 ## Estimating epoch specific sampling rates.
-poisrates_epoch = matrix(NA,6,3)
+poisrates_epoch = array(NA,c(6,3,6));
+# epoch by [mle,ci1,ci2] by group
+J = J1
+jj = 1;
 for (ii in 1:6){
   tmp = J$Data[,Bins[,6]==ii]
   tmp2 = J$Time[,Bins[,6]==ii]
   Occs = tmp[tmp>0]
   dTs = tmp2[tmp>0]
-  poisrates_epoch[ii,] <- estimatePoiss(dTs,Occs)
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
 }
 
-## Estimating interval specific sampling rates
-poisrates_interval = matrix(NA,27,3)
+# Period by [mle,ci1,ci2] by group
+J = J2
+jj = 2;
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+# Period by [mle,ci1,ci2] by group
+J = J3
+jj = 3;
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  if (sum(Occs>1)>1){
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+# Period by [mle,ci1,ci2] by group
+J = J4
+jj = 4;
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+# Period by [mle,ci1,ci2] by group
+J = J5
+jj = 5;
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+# Period by [mle,ci1,ci2] by group
+J = J6
+jj = 6;
+for (ii in 1:6){
+  tmp = J$Data[,Bins[,6]==ii]
+  tmp2 = J$Time[,Bins[,6]==ii]
+  Occs = tmp[tmp>0]
+  dTs = tmp2[tmp>0]
+  poisrates_epoch[ii,,jj] <- estimatePoiss(dTs,Occs)
+}
+
+
+
+# Changing into binomial rates for comparison across time.
+p_epoch = array(NA,c(27,3,6))
+# binom prob interval by [mle,ci1,ci2] by dinosaurgroup with sampling rate 
+# estimated per epoch.
+for (jj in 1:6){
+  for (ii in 1:27){
+    p_epoch[ii,1,jj] <- 1-exp(-poisrates_epoch[Bins[ii,6],1,jj]*Bins[ii,3])
+    p_epoch[ii,2,jj] <- 1-exp(-poisrates_epoch[Bins[ii,6],2,jj]*Bins[ii,3])
+    p_epoch[ii,3,jj] <- 1-exp(-poisrates_epoch[Bins[ii,6],3,jj]*Bins[ii,3])
+    #     1-exp(-coef(fit1)*Bins[ii,3])
+    
+  }
+}
+
+
+
+## Estimating interval specific sampling rates ----
+poisrates_interval = array(NA,c(27,3,6)); #interval by [mle,ci1,ci2] by dinosaurgroup
+# For each group
+J = J1;
+jj= 1;
 for (ii in 1:27) {
   tmp = J$Data[,ii];
   tmp2 = J$Times[,ii];
   Occs = tmp[tmp>0]
   dTs  = tmp2[tmp>0];
   if (sum(Occs>1)>0) {
-  poisrates_interval[ii,] <- estimatePoiss(dTs,Occs)
+  poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
   }
 }
+
+# For each group
+J = J2;
+jj= 2;
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+    poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+# For each group
+J = J3;
+jj= 3;
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+    poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+# For each group
+J = J4;
+jj= 4;
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+    poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+# For each group
+J = J5;
+jj= 5;
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+    poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+# For each group
+J = J6;
+jj= 6;
+for (ii in 1:27) {
+  tmp = J$Data[,ii];
+  tmp2 = J$Times[,ii];
+  Occs = tmp[tmp>0]
+  dTs  = tmp2[tmp>0];
+  if (sum(Occs>1)>0) {
+    poisrates_interval[ii,,jj] <- estimatePoiss(dTs,Occs)
+  }
+}
+
+
+
 
 
 
@@ -282,6 +579,7 @@ for (ii in 1:27){
   #ep(Bins[ii,1],2),c(yplmin,0))
 }
 abline(v=Bins[1,2],col="lightgray")
+
 
 
 
