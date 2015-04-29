@@ -97,6 +97,63 @@ createDataArrs <- function(dinos){
 }
 
 
+createDataArrs_v2 <- function(dinos,removedoubles=FALSE){
+  
+  ## Counting occurrences inside each bin for each uniqe species
+  # A uniqe indexlist of occurrences matched to species rank.
+  # This function adds a third list [Isbird] which is true/false if the taxon is a bird.
+  # This is to 'unify' the datamatrices with dinos and theropods with and without birds.
+  # if removedoubles is set to TRUE, each occurrence that spans more than one interval is ignored.
+  uniqspec <- unique(dinos$mid[dinos$mra==3])
+  # Data has [species by interval] with number of occurrences per species in each interval.
+  Data = matrix(data=0,nrow=length(uniqspec),ncol=nrow(Bins))
+  Isbird = array(NA,c(length(uniqspec),1))
+  # Times are the durations in a matrix of same size for ease of computation.
+  Times = matrix(data=0,nrow=length(uniqspec),ncol=nrow(Bins))
+  # Inputting the durations in the Times matrix
+  for (ii in 1:nrow(Bins)){
+    Times[,ii] <- Bins[ii,3]
+    
+  }
+  ## species by interval matrix
+  tix = 1 # loop counter this is for each unique species
+  countdoubles = 0; # counting how many occurrences span more than 1 bin
+  for (ii in uniqspec) {
+    ##  dinos$ein[dinos$mid==ii]-dinos$lin[dinos$mid==ii]
+    j1<- dinos$ein[dinos$mid==ii]
+    j2<- dinos$lin[dinos$mid==ii]
+    for (jj in (1:length(j1))) {
+      if (j2[jj]>(Bins[1,4]-1)&j2[jj]<Bins[27,4]){
+        if (j1[jj]>j2[jj]) {
+          if (removedoubles==TRUE){
+            binow <- -100 #make it not count.
+          }else{
+            countdoubles=countdoubles+1
+            bix = seq(j1[jj],j2[jj])
+            x = Bins[bix-(Bins[1,4]-1),3]  		
+            binow <- bix[Emprand(x)]
+          }
+        } else {
+          binow <- j1[jj]
+        }
+        if (binow<Bins[1,4] | binow>Bins[nrow(Bins),4]){
+          ignor<- 1
+        } else {
+          Data[tix,binow-(Bins[1,4]-1)] <- Data[tix,binow-(Bins[1,4]-1)]+1
+          
+          
+        }
+      }
+    }    
+    Isbird[tix] = any(dinos[dinos$mid==ii,]$cln==36616)
+    Isbird[tix]
+    tix <-tix+1
+  }
+  
+  results <- list(Data = Data, Times=Times,Isbird=Isbird)
+  return(results)
+}
+
 
 # To estimate maximum likelihood of the true number of species given observed number and 
 # binomial sampling probability.

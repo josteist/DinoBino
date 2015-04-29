@@ -27,6 +27,10 @@ dinoswobird  <- pbdb_occurrences(limit="all", base_name="Dinosauria",exclude_id=
 
 # We could group them nestedly, as they are in a phylogeny;
 
+# Now made new crateDataArrs_v2 which can remove doubles, and returns an array of whether or no
+# the entries are in class Aves.
+M <- createDataArrs_v2(dinos)
+
 # Dinosauria [All]
 # Split into Ornithischia vs Sauropodomorpha&Theropoda
 # Split into Ornithischia vs Sauropodomorpha vs Theropoda
@@ -445,6 +449,60 @@ writeClipboard(as.character(p_interval[1:6,2,]))
 writeClipboard(as.character(p_interval[1:6,3,]))
                ## Converting the Poisson rates to binomial probabilities. 
 p_binomial_all = array(NA,c(27,4,3))
+
+
+
+# 
+# Would want to get confidence bounds on the estimated true richnesses in the late cretaceous, which
+# are the last 6 intervals.
+colnames(Nospecies) <- c("Alldinos","Dinos_wo_birds","Ornits","Sauros","Theros","Theros_wo_birds")
+
+# 
+
+# Dirty scatterplots
+
+p_matrix = p_interval[,1,]
+colnames(p_matrix) <- 
+  Dinogroups <-c("Alldinos","Dinos_wo_birds","Ornits","Sauros","Theros","Theros_wo_birds")
+
+
+# Using interval estimated rates for all dinosaur w/o birds ----
+plot(midpoints[1:6],p_interval[1:6,1,2],type="o",ylim=c(0,1),xlim=rev(range(midpoints[1:6])))
+lines(midpoints[1:6],p_interval[1:6,2,2],type="l")
+lines(midpoints[1:6],p_interval[1:6,3,2],type="l")
+
+CretaRichness1 <- array(NA,c(6,3,6)) #using the upper and lower ci's from binom p
+CretaRichness2 <- array(NA,c(6,3,6)) #using the upper and lower ci's from min(binomp) and max(N_true)
+use_sampling<-c(2,2,2,2,2,2);
+for (ii in 1:3) # for mle,ci1,ci2
+{
+  for (jj in 1:6) # for the cretaceous intervals
+  {
+    for (oo in 1:6) # for each species
+    {
+     if (!is.na(p_interval[jj,ii,use_sampling[oo]])){
+      CretaRichness1[jj,ii,oo] = floor(Nospecies[jj,oo]/p_interval[jj,ii,use_sampling[oo]])
+      tmp = estimatetrue(Nospecies[jj,oo],p_interval[jj,ii,use_sampling[oo]])
+      if (ii==1){ CretaRichness2[jj,ii,oo] = tmp[1]}
+      
+      if (ii==2){ CretaRichness2[jj,ii,oo] = max(tmp)}
+      if (ii==3){ CretaRichness2[jj,ii,oo] = min(tmp)}
+    }
+  }
+  }
+}
+
+par(mfrow=c(2,3))
+for (ii in 1:6){
+plot(midpoints[1:6],CretaRichness2[1:6,1,ii],type="o",ylim=c(5,max(CretaRichness2[1:6,2,ii],na.rm=TRUE)),xlim=rev(range(midpoints[1:6])),xlab="Mya",ylab="Species richness",log="y")
+lines(midpoints[1:6],CretaRichness2[1:6,2,ii],type="l")
+lines(midpoints[1:6],CretaRichness2[1:6,3,ii],type="l")
+title(Dinogroups[ii])
+}
+
+
+cor(p_matrix,use="pairwise.complete.obs")
+## Below are old cuts -----
 # Interval by sampling period estimation by [mle, lower ci, upper ci]
 # Global, Period, Interval
 for (ii in 1:27){
