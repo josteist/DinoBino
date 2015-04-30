@@ -2,6 +2,19 @@
 
 # Some testing of the removedoubles alternative
 
+## Some quick loop to estimate the variability in number of species and poisson rates estimated
+# due to variability in the emprand placing of multiple inverval spanners
+
+Nosp_big = array(NA,100,27)
+Pois_big = array(NA,100,3);
+for (jj in 1:100){
+  T <- createDataArrs_v2(dinos);
+  Nosp_big[jj,] <- colSums(T$Data>0);
+  
+  Occs <- M$Data[M$Data>0] # Occurrences 
+  dTs  <- M$Times[M$Data>0] # List of durations for each of these occurrences
+  Pois_big[jj,] <- estimatePoiss(dTs,Occs)
+}
 
 M <- createDataArrs_v2(dinos);
 
@@ -11,8 +24,8 @@ Md <- createDataArrs_v2(dinos,removedoubles=TRUE)
 sum(Md$Data)
 sum(M$Data)
 
-colSums(Md$Data)
-colSums(M$Data)
+colSums(Md$Data>0)
+colSums(M$Data>0)
 par(mfrow=c(1,1))
 plot(midpoints,colSums(Md$Data>0),type="o")
 lines(midpoints,colSums(M$Data>0))
