@@ -5,20 +5,50 @@
 ## Some quick loop to estimate the variability in number of species and poisson rates estimated
 # due to variability in the emprand placing of multiple inverval spanners
 
-Nosp_big = array(NA,100,27)
-Pois_big = array(NA,100,3);
+
+M <- createDataArrs_v2(ornits);
+
+Nosp_big = matrix(NA,100,27)
+Pois_big = matrix(NA,100,3);
 for (jj in 1:100){
-  T <- createDataArrs_v2(dinos);
+  T <- createDataArrs_v2(ornits);
   Nosp_big[jj,] <- colSums(T$Data>0);
   
-  Occs <- M$Data[M$Data>0] # Occurrences 
-  dTs  <- M$Times[M$Data>0] # List of durations for each of these occurrences
+  Occs <- T$Data[T$Data>0] # Occurrences 
+  dTs  <- T$Times[T$Data>0] # List of durations for each of these occurrences
   Pois_big[jj,] <- estimatePoiss(dTs,Occs)
 }
 
-M <- createDataArrs_v2(dinos);
 
-Md <- createDataArrs_v2(dinos,removedoubles=TRUE)
+
+pois_mle_big = array(NA,c(100,6,3));
+
+
+# Testing for period/epoch
+for (jj in 1:100){
+  T <- createDataArrs_v2(ornits);
+  Nosp_big[jj,] <- colSums(T$Data>0);
+  for (ii in 1:6){
+    
+    tmp = T$Data[,Bins[,6]==ii]
+    tmp2 = T$Time[,Bins[,6]==ii]
+    Occs = tmp[tmp>0]
+    dTs = tmp2[tmp>0]
+    if (sum(Occs>1)>1){
+      pois_mle_big[jj,ii,]<-estimatePoiss(dTs,Occs)
+    }
+    
+  }
+  
+  
+  
+}
+
+
+hist(pois_mle_big[,3,1])
+
+
+Td <- createDataArrs_v2(ornits,removedoubles=TRUE)
 
 
 sum(Md$Data)

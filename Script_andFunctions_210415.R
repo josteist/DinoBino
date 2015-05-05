@@ -17,6 +17,7 @@ source("functions_DinoBino.R")
 ## We also want to have early_int_no and late_int_no [ein and lin] to place occs inside intervals
 ## achieved by adding "time" to the show entry.
 
+Dinogroups <-c("All dinosaurs","Dinosaurs w/o birds","Ornithischia","Sauropoda","Theropoda","Theropoda w/o birds")
 
 dinos  <- pbdb_occurrences(limit="all", base_name="Dinosauria", show=c("phylo", "ident", "time"))
 ornits <- pbdb_occurrences(limit="all", base_name="Ornithischia", show=c("phylo", "ident", "time"))
@@ -70,12 +71,15 @@ Bins[,4] = seq(112,138)
 ## Bins are [Start End Duration intervalinx]
 ## Names for dinosaur bins. PBDB intervals 112:138
 interval.names =c("Maastrichtian","Campanian","Santonian","Coniacian","Turonian","Cenomanian","Albian","Aptian","Barremian","Hauterivian","Valanginian","Berriasian","Tithonian","Kimmeridgian","Oxfordian","Callovian","Bathonian","Bajacian","Aalenian","Toarcian","Pliensbachian","Sinemurian","Hettangian","Rhaetian","Norian","Carnian","Ladinian")
-interval2.names = c("Triassic","Jurassic","Cretaceaous")
+period.names = c("Triassic","Jurassic","Cretaceaous")
+epoch.names  = c("Triassic","Early Jurassic","Mid Jurassic","Late Jurassic","Early Cretaceaous","Late Cretaceous")
+
 # Periods Triassic, Jurassic, Cretaceous
 Bins[,5] = c(3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1)
 # Epoch, Triassic, Early Jurassic, Mid Jurassic, Late Jurassic, Early Cretaceaous, Late Cretaceous
 Bins[,6] = c(6,6,6,6,6,6,5,5,5,5,5,5,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1)
 midpoints=(Bins[,1]+Bins[,2])/2
+dimnames(Bins)<-list(interval.names,c("Start","End","Duration","PBDB index","Period","Epoch"))
 
 
 J1 = createDataArrs(dinos)
@@ -88,6 +92,7 @@ J6 = createDataArrs(theroswobird)
 
 # Extracting number of species.
 Nospecies = array(NA,c(27,6)); #interval by dinosaurgroup
+dimnames(Nospecies)<-list(interval.names,Dinogroups)
 J = J1;
 jj =  1
 Nospecies[,jj] <- getNospec(J$Data)
@@ -111,6 +116,66 @@ Nospecies[,jj] <- getNospec(J$Data)
 J = J6;
 jj =  6
 Nospecies[,jj] <- getNospec(J$Data)
+
+## Below is for re-generating the data arrays to get a median estimate of observed richness
+# This is needed because each occurrence that spans more than one interval is placed into 
+# a specified interval based on the duration of the intervals. [i.e an occurrences spanning
+# two intervals of duration 5 and 10 Myr are placed with p=1/3 in the first and 2/3 in the
+# second]. To account for this when getting species counts, we resample 100 times and use the
+# median value for each interval for each group.
+
+Nosp_big = array(NA,c(27,6,100)); #interval by dinosaurgroup by resampled
+
+for (ii in 1:100){
+  
+  # Regenerating arrays. THis is not optimized code, but works.
+  J1 = createDataArrs(dinos)
+  J2 = createDataArrs(dinoswobird)
+  J3 = createDataArrs(ornits)
+  J4 = createDataArrs(sauros)
+  J5 = createDataArrs(theros)
+  J6 = createDataArrs(theroswobird)
+# Extracting number of species.
+J = J1;
+jj =  1
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+J = J2;
+jj =  2
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+J = J3;
+jj =  3
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+J = J4;
+jj =  4
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+J = J5;
+jj =  5
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+J = J6;
+jj =  6
+Nosp_big[,jj,ii] <- getNospec(J$Data)
+
+}
+
+
+MeanSpec = array(NA,c(27,6,3)); # interval by group by mean/median/mode
+# Extracting means and medians
+for (ii in 1:27){
+  for (jj in 1:6){
+    MeanSpec[ii,jj,1] = mean(Nosp_big[ii,jj,])
+    MeanSpec[ii,jj,2] = median(Nosp_big[ii,jj,])
+    MeanSpec[ii,jj,3] = Mode(Nosp_big[ii,jj,])
+  }
+}
+writeClipboard(as.character(MeanSpec[,6,]))
+
+dimnames(MeanSpec)<-list(interval.names,Dinogroups,c("Mean","Median","Mode"))
+
 
 ## Testing, estimating the sampling probability using the functions defined below for each 
 ## interval
@@ -160,6 +225,8 @@ poisrates[6,] <- estimatePoiss(dTs,Occs)
 
 # Making them be binomial probs.
 p_glob = array(NA,c(27,3,6))
+stat.names = c("MLE","CI1","CI2")
+dimnames(p_glob)<-list(interval.names,stat.names,Dinogroups)
 for (jj in 1:6){
 for (ii in 1:27){
   p_glob[ii,1,jj] <- 1-exp(-poisrates[jj,1]*Bins[ii,3])
@@ -179,6 +246,7 @@ for (jj in 2:6){
 
 # Estimating period specific sampling rates for each of the datasets
 poisrates_period = array(NA,c(3,3,6)) # storing them here, period by [mle,ci1,ci2] by dinogroup
+dimnames(poisrates_period)<-list(period.names,statnames,Dinogroups)
 J = J1; jj=1;  
 for (ii in 1:3){
   tmp = J$Data[,Bins[,5]==ii]
@@ -237,6 +305,7 @@ for (ii in 1:3){
 
 # Period specific Binomial rates
 p_period = array(NA,c(27,3,6))
+dimnames(p_period)<-list(interval.names,statnames,Dinogroups)
 # Interval by [mle,ci1,ci2] by group
 for (jj in 1:6){
   for (ii in 1:27){
@@ -252,6 +321,7 @@ for (jj in 1:6){
 
 ## Estimating epoch specific sampling rates.
 poisrates_epoch = array(NA,c(6,3,6));
+dimnames(poisrates_epoch)<-list(epoch.names,stat.names,Dinogroups)
 # epoch by [mle,ci1,ci2] by group
 J = J1
 jj = 1;
@@ -324,6 +394,7 @@ for (ii in 1:6){
 
 # Changing into binomial rates for comparison across time.
 p_epoch = array(NA,c(27,3,6))
+dimnames(p_epoch)<-list(interval.names,stat.names,Dinogroups)
 # binom prob interval by [mle,ci1,ci2] by dinosaurgroup with sampling rate 
 # estimated per epoch.
 for (jj in 1:6){
@@ -340,6 +411,7 @@ for (jj in 1:6){
 
 ## Estimating interval specific sampling rates ----
 poisrates_interval = array(NA,c(27,3,6)); #interval by [mle,ci1,ci2] by dinosaurgroup
+dimnames(poisrates_interval)<-list(interval.names,stat.names,Dinogroups)
 # For each group
 J = J1;
 jj= 1;
@@ -422,6 +494,7 @@ for (ii in 1:27) {
 # Converting the interval specific rates to binomial probabilities.
 
 p_interval = array(NA,c(27,3,6)); #interval by [mle,ci1,ci2] by group
+dimnames(p_interval)<-list(interval.names,stat.names,Dinogroups)
 for (jj in 1:6){
   for (ii in 1:27){
     p_interval[ii,1,jj] <- 1-exp(-poisrates_interval[ii,1,jj]*Bins[ii,3])
@@ -431,6 +504,8 @@ for (jj in 1:6){
     
   }
 }
+
+
 
 
 
@@ -448,8 +523,158 @@ writeClipboard(as.character(p_interval[1:6,1,]))
 writeClipboard(as.character(p_interval[1:6,2,]))
 writeClipboard(as.character(p_interval[1:6,3,]))
                ## Converting the Poisson rates to binomial probabilities. 
-p_binomial_all = array(NA,c(27,4,3))
 
+
+
+## We want to plot the sampling rates estimated under the different time-binning
+# regimes. For all 6 groups we have 4 different estimates, some of which as Nans.
+# for each interval, 6*4*27. Plus ci's.
+
+# We need a consistent, color, linestyle usage. Suggest to vary line-type across taxonomic group
+# and color for sampling protocol/temporal binning.
+# linetypes are 1 through 6 for the taxonomic groups
+# colors are
+# 
+samp.colors <- c("deepskyblue3","darkolivegreen3","chocolate1","darkgoldenrod1")
+samp.names <- c("Global sampling rate","Period sampling rate","Epoch sampling rate","Interval sampling rate")
+
+# The p_glob, p_epoch, p_period, p_interval all have the binomial probs. They just need
+# to be inputted to the big array. Or do we even bother;
+
+
+
+for (jj in 1:6){
+
+plot(midpoints,p_glob[,1,jj],type="l",ylim=c(-.1,1),xlim=rev(range(midpoints)),col=samp.colors[1],lwd=2,xlab="Million years ago",ylab="Binomial sampling probability")
+title(Dinogroups[jj])
+     lines(midpoints,p_period[,1,jj],col = samp.colors[2],lwd=2)
+lines(midpoints,p_epoch[,1,jj],col=samp.colors[3],lwd=2)
+# lines(midpoints,p_interval[,1,jj],col = samp.colors[4],lwd=2)
+legend("bottomleft",samp.names,pch="l",col=samp.colors)
+
+}
+library(RColorBrewer)
+color.list <- brewer.pal(4,"Set1")
+color.list2 <- color.list
+for (ii in 1:4){
+  color.list2[ii] = paste(color.list[ii],'44',sep=""); 
+  # Making one slightly transparent.
+}
+
+
+
+# Printing binomial sampling rrates to file ----
+
+# to print to pdf;
+# Whole Mesozoic
+pdf("TestingSamplingProbs_all.pdf")
+par(mfrow=c(3,2)) #making six plots in one
+# Trying to plot the CI's
+par(mar=c(2,2,2,2))
+for (ii in 1:6){ # for each dinosaur group
+  plot(midpoints,p_glob[,1,ii], type='l',col=color.list[1],ylim=c(0,1),xlim = rev(range(midpoints)),xlab="Ma",ylab="Binomial sampling probability")
+  
+  
+  
+  polygon(c(rev(midpoints),midpoints),c(rev(p_glob[,2,ii]),p_glob[,3,ii]),col=color.list2[1],border=NA)
+  lines(midpoints,p_glob[,1,ii],type='l',col=color.list[1],lwd=1)
+  
+  
+  # plot(midpoints,p_interval[,1,1], type='l',col=color.list[5],ylim=c(0,1))
+  polygon(c(rev(midpoints),midpoints),c(rev(p_period[,2,ii]),p_period[,3,ii]),col=color.list2[2],border=NA)
+  lines(midpoints,p_period[,1,ii],type='l',col=color.list[2],lwd=1)
+  
+  # plot(midpoints,p_epoch[,1,1], type='l',col=color.list[3],ylim=c(0,1))
+  polygon(c(rev(midpoints),midpoints),c(rev(p_epoch[,2,ii]),p_epoch[,3,ii]),col=color.list2[3],border=NA)
+  lines(midpoints,p_epoch[,1,ii],type='l',col=color.list[3],lwd=1)
+  title(Dinogroups[ii])
+  # Adding interval lines
+  for (jj in 1:27){
+    abline(v=Bins[jj,1],col="lightgray")
+    #ep(Bins[ii,1],2),c(yplmin,0))
+  }
+  abline(v=Bins[1,2],col="lightgray")
+  
+  # Adding period/epoch lines
+  perlims = c(Bins[c(1,13,24),2],Bins[27,1])
+  epolims = c(Bins[c(1,7,13,16,20,24),2],Bins[27,1])
+  for (jj in 1:4){
+    abline(v=perlims[jj],col="gray25")
+  }
+  for (jj in 1:7){
+    abline(v=epolims[jj],col="gray14")
+  }
+  # Adding legend
+  if (ii==6){
+    legend("bottomright",samp.names[1:3],pch='l',col=color.list[1:3],bg="white")}
+  #,bty="n")
+  # bty="n" to make legend box not transparent?
+  
+  
+}
+dev.off()# closing pdf print
+## end of print figure section ----
+
+
+# to print to pdf;
+# Cretaceous only.
+plbins = which(Bins[,5]==3)
+pdf("SamplingProbs_Cret_all.pdf")
+par(mfrow=c(3,2)) #making six plots in one
+# Trying to plot the CI's
+par(mar=c(2,2,2,2))
+for (ii in 1:6){ # for each dinosaur group
+  plot(midpoints[plbins],p_glob[plbins,1,ii], type='l',col=color.list[1],ylim=c(0,1),xlim = rev(range(midpoints[plbins])),xlab="Ma",ylab="Binomial sampling probability")
+  
+  
+  
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(p_glob[plbins,2,ii]),p_glob[plbins,3,ii]),col=color.list2[1],border=NA)
+  lines(midpoints[plbins],p_glob[plbins,1,ii],type='l',col=color.list[1],lwd=1)
+  
+  
+  # plot(midpoints,p_interval[,1,1], type='l',col=color.list[5],ylim=c(0,1))
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(p_period[plbins,2,ii]),p_period[plbins,3,ii]),col=color.list2[2],border=NA)
+  lines(midpoints[plbins],p_period[,1,ii],type='l',col=color.list[2],lwd=1)
+  
+  # plot(midpoints,p_epoch[,1,1], type='l',col=color.list[3],ylim=c(0,1))
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(p_epoch[plbins,2,ii]),p_epoch[plbins,3,ii]),col=color.list2[3],border=NA)
+  lines(midpoints[plbins],p_epoch[plbins,1,ii],type='l',col=color.list[3],lwd=1)
+  
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(p_interval[plbins,2,ii]),p_interval[plbins,3,ii]),col=color.list2[4],border=NA)
+  lines(midpoints[plbins],p_interval[plbins,1,ii],type='l',col=color.list[4],lwd=1)
+  
+  title(Dinogroups[ii])
+  # Adding interval lines
+  for (jj in 1:27){
+    abline(v=Bins[jj,1],col="lightgray")
+    #ep(Bins[ii,1],2),c(yplmin,0))
+  }
+  abline(v=Bins[1,2],col="lightgray")
+  
+  # Adding period/epoch lines
+  perlims = c(Bins[c(1,13,24),2],Bins[27,1])
+  epolims = c(Bins[c(1,7,13,16,20,24),2],Bins[27,1])
+  for (jj in 1:4){
+    abline(v=perlims[jj],col="gray25")
+  }
+  for (jj in 1:7){
+    abline(v=epolims[jj],col="gray14")
+  }
+  # Adding legend
+  if (ii==6){
+    legend("bottomright",samp.names[1:3],pch='l',col=color.list[1:3],bg="white")}
+  #,bty="n")
+  # bty="n" to make legend box not transparent?
+  
+  
+}
+dev.off()# closing pdf print
+
+
+
+# plot(midpoints,p_glob[,1,1], type='l',col='black',ylim=c(0,1))
+# polygon(c(rev(midpoints),midpoints),c(rev(p_glob[,2,1]),p_glob[,3,1]),col='grey80',border=NA)
+# lines(midpoints,p_glob[,1,1],type='l',col='black')
 
 
 # 
@@ -463,7 +688,7 @@ colnames(Nospecies) <- c("Alldinos","Dinos_wo_birds","Ornits","Sauros","Theros",
 
 p_matrix = p_interval[,1,]
 colnames(p_matrix) <- 
-  Dinogroups <-c("Alldinos","Dinos_wo_birds","Ornits","Sauros","Theros","Theros_wo_birds")
+  
 
 
 # Using interval estimated rates for all dinosaur w/o birds ----
