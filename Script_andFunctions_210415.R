@@ -18,10 +18,10 @@ source("functions_DinoBino.R")
 ## achieved by adding "time" to the show entry.
 
 Dinogroups <-c("All dinosaurs","Dinosaurs w/o birds","Ornithischia","Sauropoda","Theropoda","Theropoda w/o birds")
-
+# SHould probably use Sauropodomorpha and not Sauropoda...
 dinos  <- pbdb_occurrences(limit="all", base_name="Dinosauria", show=c("phylo", "ident", "time"))
 ornits <- pbdb_occurrences(limit="all", base_name="Ornithischia", show=c("phylo", "ident", "time"))
-sauros <- pbdb_occurrences(limit="all", base_name="Sauropoda", show=c("phylo", "ident", "time"))
+sauros <- pbdb_occurrences(limit="all", base_name="Sauropodomorpha", show=c("phylo", "ident", "time"))
 theros <- pbdb_occurrences(limit="all", base_name="Theropoda", show=c("phylo", "ident", "time"))
 theroswobird <- pbdb_occurrences(limit="all", base_name="Theropoda",exclude_id=36616, show=c("phylo", "ident", "time"))
 dinoswobird  <- pbdb_occurrences(limit="all", base_name="Dinosauria",exclude_id=36616, show=c("phylo", "ident", "time"))
@@ -85,7 +85,7 @@ dimnames(Bins)<-list(interval.names,c("Start","End","Duration","PBDB index","Per
 J1 = createDataArrs(dinos)
 J2 = createDataArrs(dinoswobird)
 J3 = createDataArrs(ornits)
-J4 = createDataArrs(sauros)
+J41 = createDataArrs(sauros)
 J5 = createDataArrs(theros)
 J6 = createDataArrs(theroswobird)
 # Now Data and Times are made with the function above.

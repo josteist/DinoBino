@@ -159,10 +159,15 @@ createDataArrs_v2 <- function(dinos,removedoubles=FALSE){
 # binomial sampling probability.
 # pdf = 
 estimatetrue <- function(nobs,binomprob) {
+  if (!is.na(binomprob)){
   n <- seq(0,nobs/binomprob * 4+10)
   liks <- log(dbinom(nobs,size=n,prob=binomprob))
   tmp <- n[which((2*(max(liks)-liks))<qchisq(0.95,1))]
+  
   return(c(n[which.max(liks)],min(tmp),max(tmp)))
+  } else {
+    return(c(NA,NA,NA))
+  }
 }
   
 
@@ -177,4 +182,17 @@ getNospec <- function(Data){
   return(Nospec)
 }
 
+# Number of species per interval, range-through.
+getNospecRT <- function(Data){
+  Nospec <- matrix(0,27,1);
+  for (jj in 1:nrow(Data)){
+    # For each species
+    j <- which(Data[jj,]>0) # in which intervals does this species occur
+    if (!is.na(j[1])){
+    Nospec[seq(min(j),max(j),1)] = Nospec[seq(min(j),max(j),1)]+1; # adding the species to bins, range-through.
+    }
+  }
+  return(Nospec)
+  
+}
   

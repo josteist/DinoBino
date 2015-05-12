@@ -188,15 +188,15 @@ for (dg in 1:6){
       N_est_glob[int,1,dg] =     estimatetrue(MeanSpec[int,dg,2],p_glob[int,1,dg])[1] #double MLE use first as this is MLE
       N_est_glob[int,2,dg] = max(estimatetrue(MeanSpec[int,dg,2],p_glob[int,2,dg])) #use the max here to get upper CI
       N_est_glob[int,3,dg] = min(estimatetrue(MeanSpec[int,dg,2],p_glob[int,3,dg])) #use the min here to get lower CI
-
+      
       N_est_per[int,1,dg] =     estimatetrue(MeanSpec[int,dg,2],p_period[int,1,dg])[1] #double MLE use first as this is MLE
       N_est_per[int,2,dg] = max(estimatetrue(MeanSpec[int,dg,2],p_period[int,2,dg])) #use the max here to get upper CI
       N_est_per[int,3,dg] = min(estimatetrue(MeanSpec[int,dg,2],p_period[int,3,dg])) #use the min here to get lower CI
-    
+      
       N_est_epo[int,1,dg] =     estimatetrue(MeanSpec[int,dg,2],p_epoch[int,1,dg])[1] #double MLE use first as this is MLE
       N_est_epo[int,2,dg] = max(estimatetrue(MeanSpec[int,dg,2],p_epoch[int,2,dg])) #use the max here to get upper CI
       N_est_epo[int,3,dg] = min(estimatetrue(MeanSpec[int,dg,2],p_epoch[int,3,dg])) #use the min here to get lower CI
-    
+      
       N_est_int[int,1,dg] =     estimatetrue(MeanSpec[int,dg,2],p_interval[int,1,dg])[1] #double MLE use first as this is MLE
       N_est_int[int,2,dg] = max(estimatetrue(MeanSpec[int,dg,2],p_interval[int,2,dg])) #use the max here to get upper CI
       N_est_int[int,3,dg] = min(estimatetrue(MeanSpec[int,dg,2],p_interval[int,3,dg])) #use the min here to get lower CI
@@ -209,31 +209,34 @@ par(mfrow=c(3,2)) #making six plots in one
 # Trying to plot the CI's
 par(mar=c(2,2,2,2))
 
-plbins = 1:6;
+plbins = 1:27;
 for (ii in 1:6){
-plot(midpoints[plbins],N_est_glob[plbins,1,ii], type='l',col=color.list[1],ylim=c(0,max(c(N_est_glob[plbins,,ii],N_est_per[plbins,,ii],N_est_epo[plbins,,ii]),na.rm=TRUE)*1.1),xlim = rev(range(midpoints[plbins])),xlab="Ma",ylab="Eestimated true richness")
-
-polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_glob[plbins,2,ii]),N_est_glob[plbins,3,ii]),col=color.list2[1],border=NA)
-lines(midpoints[plbins],N_est_glob[plbins,1,ii],type='l',col=color.list[1],lwd=1)
-
-polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_per[plbins,2,ii]),N_est_per[plbins,3,ii]),col=color.list2[2],border=NA)
-lines(midpoints[plbins],N_est_per[plbins,1,ii],type='l',col=color.list[2],lwd=1)
-
-polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_epo[plbins,2,ii]),N_est_epo[plbins,3,ii]),col=color.list2[3],border=NA)
-lines(midpoints[plbins],N_est_epo[plbins,1,ii],type='l',col=color.list[3],lwd=1)
-
-lines(midpoints[plbins],MeanSpec[plbins,ii,2])
+  plot(midpoints[plbins],N_est_glob[plbins,1,ii], type='l',col=color.list[1],ylim=c(0,max(c(N_est_glob[plbins,,ii],N_est_per[plbins,,ii],N_est_epo[plbins,,ii]),na.rm=TRUE)*1.1),xlim = rev(range(midpoints[plbins])),xlab="Ma",ylab="Eestimated true richness")
+  
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_glob[plbins,2,ii]),N_est_glob[plbins,3,ii]),col=color.list2[1],border=NA)
+  lines(midpoints[plbins],N_est_glob[plbins,1,ii],type='l',col=color.list[1],lwd=1)
+  
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_per[plbins,2,ii]),N_est_per[plbins,3,ii]),col=color.list2[2],border=NA)
+  lines(midpoints[plbins],N_est_per[plbins,1,ii],type='l',col=color.list[2],lwd=1)
+  
+  polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_epo[plbins,2,ii]),N_est_epo[plbins,3,ii]),col=color.list2[3],border=NA)
+  lines(midpoints[plbins],N_est_epo[plbins,1,ii],type='l',col=color.list[3],lwd=1)
+  
+  lines(midpoints[plbins],MeanSpec[plbins,ii,2])
+  
+#   
+#   
+#   # For intervals, not laaaarge CIs
+#   for (jj in 1:(length(plbins)-1)){
+#     polygon(c(rev(midpoints[plbins[jj:(jj+1)]]),midpoints[plbins[jj:(jj+1)]]),c(rev(N_est_int[plbins[jj:(jj+1)],2,ii]),N_est_int[plbins[jj:(jj+1)],3,ii]),col=color.list2[4],border=NA)
+#     lines(midpoints[plbins[jj:(jj+1)]],N_est_int[plbins[jj:(jj+1)],1,ii],type='l',col=color.list[4],lwd=1)
+#     
+#   }
+  title(Dinogroups[ii])
 }
 legend("topleft",samp.names[1:3],pch='l',col=color.list[1:3],bg="white")
 
 
-
-# For intervals, not laaaarge CIs
-for (jj in 1:(length(plbins)-1)){
-  polygon(c(rev(midpoints[plbins[jj:(jj+1)]]),midpoints[plbins[jj:(jj+1)]]),c(rev(N_est_int[plbins[jj:(jj+1)],2,ii]),N_est_int[plbins[jj:(jj+1)],3,ii]),col=color.list2[4],border=NA)
-  lines(midpoints[plbins[jj:(jj+1)]],N_est_int[plbins[jj:(jj+1)],1,ii],type='l',col=color.list[4],lwd=1)
-  
-}
 
 # polygon(c(rev(midpoints[plbins]),midpoints[plbins]),c(rev(N_est_int[plbins,2,ii]),N_est_int[plbins,3,ii]),col=color.list2[1],border=NA)
 # lines(midpoints[plbins],N_est_int[plbins,1,ii],type='l',col=color.list[4],lwd=1)
