@@ -30,7 +30,7 @@ dinoswobird  <- pbdb_occurrences(limit="all", base_name="Dinosauria",exclude_id=
 
 # Now made new crateDataArrs_v2 which can remove doubles, and returns an array of whether or no
 # the entries are in class Aves.
-M <- createDataArrs_v2(dinos)
+M <- createDataArrs_v2(dinoswobird)
 
 # Dinosauria [All]
 # Split into Ornithischia vs Sauropodomorpha&Theropoda
@@ -85,7 +85,7 @@ dimnames(Bins)<-list(interval.names,c("Start","End","Duration","PBDB index","Per
 J1 = createDataArrs(dinos)
 J2 = createDataArrs(dinoswobird)
 J3 = createDataArrs(ornits)
-J41 = createDataArrs(sauros)
+J4 = createDataArrs(sauros)
 J5 = createDataArrs(theros)
 J6 = createDataArrs(theroswobird)
 # Now Data and Times are made with the function above.
@@ -175,7 +175,7 @@ for (ii in 1:27){
 writeClipboard(as.character(MeanSpec[,6,]))
 
 dimnames(MeanSpec)<-list(interval.names,Dinogroups,c("Mean","Median","Mode"))
-
+statnames <- c("MLE","ci1","ci2")
 
 ## Testing, estimating the sampling probability using the functions defined below for each 
 ## interval
@@ -237,11 +237,11 @@ for (ii in 1:27){
 }
 }
 
-
-plot(midpoints,p_glob[,1,1],type = "o",lty=1,xlim = rev(range(midpoints)))
-for (jj in 2:6){
-  lines(midpoints,p_glob[,1,jj],type = "o",lty=jj)
-}
+# 
+# plot(midpoints,p_glob[,1,1],type = "o",lty=1,xlim = rev(range(midpoints)))
+# for (jj in 2:6){
+#   lines(midpoints,p_glob[,1,jj],type = "o",lty=jj)
+# }
 
 
 # Estimating period specific sampling rates for each of the datasets
@@ -508,21 +508,21 @@ for (jj in 1:6){
 
 
 
+# 
+# # Temp code to export the numbers
+# # Number of species in the different groups
+# writeClipboard(as.character(Nospecies))
+# # Sampling probabilities as binomials. MLEs
+# writeClipboard(as.character(p_glob[,1,]))
+# writeClipboard(as.character(p_period[,1,]))
+# writeClipboard(as.character(p_epoch[,1,]))
+# writeClipboard(as.character(p_interval[,1,]))
 
-# Temp code to export the numbers
-# Number of species in the different groups
-writeClipboard(as.character(Nospecies))
-# Sampling probabilities as binomials. MLEs
-writeClipboard(as.character(p_glob[,1,]))
-writeClipboard(as.character(p_period[,1,]))
-writeClipboard(as.character(p_epoch[,1,]))
-writeClipboard(as.character(p_interval[,1,]))
-
-# Late Cretaceous with cis
-writeClipboard(as.character(p_interval[1:6,1,]))
-writeClipboard(as.character(p_interval[1:6,2,]))
-writeClipboard(as.character(p_interval[1:6,3,]))
-               ## Converting the Poisson rates to binomial probabilities. 
+# # Late Cretaceous with cis
+# writeClipboard(as.character(p_interval[1:6,1,]))
+# writeClipboard(as.character(p_interval[1:6,2,]))
+# writeClipboard(as.character(p_interval[1:6,3,]))
+#                ## Converting the Poisson rates to binomial probabilities. 
 
 
 
@@ -567,7 +567,7 @@ for (ii in 1:4){
 
 # to print to pdf;
 # Whole Mesozoic
-pdf("TestingSamplingProbs_all.pdf")
+# pdf("TestingSamplingProbs_all.pdf")
 par(mfrow=c(3,2)) #making six plots in one
 # Trying to plot the CI's
 par(mar=c(2,2,2,2))
@@ -612,14 +612,14 @@ for (ii in 1:6){ # for each dinosaur group
   
   
 }
-dev.off()# closing pdf print
+# dev.off()# closing pdf print
 ## end of print figure section ----
 
 
 # to print to pdf;
 # Cretaceous only.
 plbins = which(Bins[,5]==3)
-pdf("SamplingProbs_Cret_all.pdf")
+# pdf("SamplingProbs_Cret_all.pdf")
 par(mfrow=c(3,2)) #making six plots in one
 # Trying to plot the CI's
 par(mar=c(2,2,2,2))
@@ -668,7 +668,7 @@ for (ii in 1:6){ # for each dinosaur group
   
   
 }
-dev.off()# closing pdf print
+# dev.off()# closing pdf print
 
 
 
