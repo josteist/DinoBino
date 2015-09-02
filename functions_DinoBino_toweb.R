@@ -1,9 +1,4 @@
 ## Functions:
-# To find the mode of a list of numbers
-Mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
 
 # Drawing a number/index from an empirical probability distribution.
 Emprand <- function(x) {
@@ -295,31 +290,5 @@ estimatetrue <- function(nobs,binomprob) {
   } else {
     return(c(NA,NA,NA))
   }
-}
-
-
-
-# Number of species per interval
-getNospec <- function(Data){
-  Nospec <- matrix(0,27,1)
-  for (ii in 1:27){
-    Nospec[ii]<-sum(Data[,ii]>0)
-    
-  }
-  return(Nospec)
-}
-
-# Number of species per interval, range-through.
-getNospecRT <- function(Data){
-  Nospec <- matrix(0,27,1);
-  for (jj in 1:nrow(Data)){
-    # For each species
-    j <- which(Data[jj,]>0) # in which intervals does this species occur
-    if (!is.na(j[1])){
-      Nospec[seq(min(j),max(j),1)] = Nospec[seq(min(j),max(j),1)]+1; # adding the species to bins, range-through.
-    }
-  }
-  return(Nospec)
-  
 }
 
